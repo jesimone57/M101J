@@ -1,4 +1,4 @@
-# 7 Week MongDB Certification Class
+# 7 Week MongoDB Certification Class
 
 MongoDB University Online Class - M101J: MongoDB for Java Developers
 
