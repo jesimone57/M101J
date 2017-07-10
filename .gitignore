@@ -1,0 +1,6 @@
+target/
+.idea
+*.iml
+homework/week7-final-exam/enron*.*
+homework/week7-final-exam/dump/enron/messages.bson
+

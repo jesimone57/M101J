@@ -1,0 +1,13 @@
+mongoimport -d blog -c posts --drop --file="final exam question 4 posts.json"  --batchSize 1
+
+use blog
+
+db.posts.createIndex({"permalink": 1})
+db.posts.createIndex({"date": -1})
+db.posts.createIndex({"tags":1, "date": -1})
+
+db.posts.getIndexes()
+
+db.posts.find( {"body": "this is a test"})
+
+db.posts.update( {"permalink" : "test1449518999945"}, {$inc: {"comments.0.num_likes": 1} })

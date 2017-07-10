@@ -1,0 +1,501 @@
+
+
+// notes ...
+$project  = reshape   = 1 : 1
+$match    = filter    = n : 1
+$group    = aggregate = n : 1  ($sum, $avg, $min, $max, $push. $addToSet, $first, $last) 
+$sort     = sort      = 1 : 1
+$skip     = skip      = n : 1
+$limit    = limit     = n : 1
+$unwind   = normalize = 1 : n
+$out      = output    = 1 : 1
+$redact
+$geonear
+
+
+use agg
+
+
+db.products.drop()
+
+db.products.insert({'name':'iPad 16GB Wifi', 'manufacturer':"Apple", 
+		    'category':'Tablets', 
+		    'price':499.00})
+db.products.insert({'name':'iPad 32GB Wifi', 'category':'Tablets', 
+		    'manufacturer':"Apple", 
+		    'price':599.00})
+db.products.insert({'name':'iPad 64GB Wifi', 'category':'Tablets', 
+		    'manufacturer':"Apple", 
+		    'price':699.00})
+db.products.insert({'name':'Galaxy S3', 'category':'Cell Phones', 
+		    'manufacturer':'Samsung',
+		    'price':563.99})
+db.products.insert({'name':'Galaxy Tab 10', 'category':'Tablets', 
+		    'manufacturer':'Samsung',
+		    'price':450.99})
+db.products.insert({'name':'Vaio', 'category':'Laptops', 
+		    'manufacturer':"Sony", 
+		    'price':499.00})
+db.products.insert({'name':'Macbook Air 13inch', 'category':'Laptops', 
+		    'manufacturer':"Apple", 
+		    'price':499.00})
+db.products.insert({'name':'Nexus 7', 'category':'Tablets', 
+		    'manufacturer':"Google", 
+		    'price':199.00})
+db.products.insert({'name':'Kindle Paper White', 'category':'Tablets', 
+		    'manufacturer':"Amazon", 
+		    'price':129.00})
+db.products.insert({'name':'Kindle Fire', 'category':'Tablets', 
+		    'manufacturer':"Amazon", 
+		    'price':199.00})
+
+
+db.products.aggregate([ 
+   {$group: {
+      _id:"$manufacturer",
+	  num_products: {$sum:1} } 
+   }
+])
+
+db.products.aggregate([
+   {"$group": {
+       "_id":"$category",
+       num_products: {$sum:1} }  
+   }
+])
+
+// composite group by key ...
+db.products.aggregate([    
+   {"$group": {       
+        "_id": {manufacturer: "$manufacturer", category: "$category"}, 
+		 num_products: {$sum:1} } 
+     }
+ ])
+ 
+ db.products.aggregate([ 
+    {$group: {
+       _id:"$manufacturer",
+ 	  sum_prices: {$sum:"$price"} } 
+    }
+ ])
+ 
+ 
+ db.zips.aggregate([ 
+    {$group: {
+       _id:"$state",
+ 	  population: {$sum:"$pop"} } 
+    }
+ ])
+ 
+ db.products.aggregate([
+    {"$group": {
+        "_id":"$category",
+        avg_price: {$avg:"$price"} }  
+    }
+ ])
+ 
+ // using $avg quiz
+ db.zips.aggregate([ 
+    {$group: {
+       _id:"$state",
+ 	  average_pop: {$avg:"$pop"} } 
+    }
+ ])
+ 
+ 
+ db.products.aggregate([ 
+    {$group: {
+       _id:"$manufacturer",
+ 	  categories: {$addToSet:"$category"} } 
+    }
+ ])
+ 
+ // using $addToSet quiz
+ db.zips.aggregate([ 
+    {$group: {
+       _id:"$city",
+ 	  postal_codes: {$addToSet:"$_id"} } 
+    }
+ ])
+ 
+ // using $min and $max quiz
+ db.zips.aggregate([ 
+    {$group: {
+       _id:"$state",
+ 	  pop: {$max:"$pop"} } 
+    }
+ ])
+ 
+ use students
+ db.grades.aggregate([
+   {$group:{_id:{class_id:"$class_id",  student_id:"$student_id"},  average:{"$avg":"$score"}}},
+   {$group:{_id: "$_id.class_id",   average:{"$avg":"$average"}}}
+])
+
+// project phase
+remove keys, add new keys, reshape keys, use simple functions: $toUpper, $toLower, $add, $multiply
+
+
+use agg
+db.products.aggregate([
+     {$project:
+        {
+        _id: 0,                               // do not include _id field
+        maker: {$toLower: "$manufacturer"},   // create a new key called maker
+        details: {category: "$category", 
+                  price: {"$multiply": ["$price",10]}
+                  },
+        item: "$name"
+        }
+     }
+])
+
+// using project quiz
+db.zips.aggregate([
+     {$project:
+        {
+        zip: "$_id",
+        city:{$toLower:"$city"}, 
+        pop:1, 
+        state:1,
+        _id: 0    
+        }
+     }
+])
+
+use agg
+db.zips.aggregate([
+    {$match:
+     {
+      state:"CA"
+     }
+    },
+    {$group:
+       {
+         _id: "$city",
+         population: {$sum: "$pop"},
+         zip_codes: {$addToSet: "$_id"}
+       }
+    },
+    {$project:
+       {
+       _id: 0,
+       city: "$_id",
+       population: 1, 
+       zip_codes: 1   
+       }
+    }
+])
+
+// using $match quiz ...
+db.zips.aggregate([
+     {$match:
+       {
+        pop:{ $gt: 100000 }
+       }
+      }
+  ])
+  
+  
+// sort phase limit of 100 MB for in memory sort otherwise resorts to disk based sort
+// sorting can be done before grouping or after grouping
+
+
+// using $sort example
+db.zips.aggregate([
+    {$match:
+     {
+      state:"NY"
+     }
+    },
+    {$group:
+       {
+         _id: "$city",
+         population: {$sum: "$pop"}
+       }
+    },
+    {$project:
+       {
+       _id: 0,
+       city: "$_id",
+       population: 1 
+       }
+    },
+    {$sort:
+       {
+       population: -1    // descending
+       }
+     }
+])
+
+// Using $sort quiz
+db.zips.aggregate([
+    {$sort:
+       {
+       state: 1, city: 1
+       }
+     }
+])
+
+// always sort, then skip, then limit (otherwise order is undefined if you don't sort)
+
+// can only group on data in array if we first unwind the array
+
+// unwind example usig the blog db
+use blog;
+db.posts.aggregate([
+    { $unwind: "$tags"},      // unwind by tags
+    { $group:                 //now group by tags, counting each tag
+      {  _id:  "$tags",
+         count: {$sum: 1}
+      }
+    },
+    { $sort: {"count": -1}},  // sort by popularity descending
+    { $limit: 10},            // show me the top 10
+    { $project:               // change the name of _id to be tag
+      { _id: 0,
+        tag: '$_id',
+        count: 1
+      }
+    }
+])
+
+// double unwind example
+use agg;
+db.inventory.drop();
+db.inventory.insert({'name':"Polo Shirt", 'sizes':["Small", "Medium", "Large"], 'colors':['navy', 'white', 'orange', 'red']})
+db.inventory.insert({'name':"T-Shirt", 'sizes':["Small", "Medium", "Large", "X-Large"], 'colors':['navy', "black",  'orange', 'red']})
+db.inventory.insert({'name':"Chino Pants", 'sizes':["32x32", "31x30", "36x32"], 'colors':['navy', 'white', 'orange', 'violet']})
+db.inventory.aggregate([
+    {$unwind: "$sizes"},
+    {$unwind: "$colors"},
+    {$group: 
+     {
+	'_id': {'size':'$sizes', 'color':'$colors'},
+	'count' : {'$sum':1}
+     }
+    }
+])
+
+// SQL to mongoDB aggregation framework matching chart
+https://docs.mongodb.org/manual/reference/sql-aggregation-comparison/
+ 
+
+limitations of the aggregation framework:
+1. 100 MB limit fo each stage in pipeline (unless you use allowDiskUse config flag)
+2. 16 MB limit for returned results document (use a cursor to get around this)
+3. sharded system -> use aggregation -> results returned to first shard
+4. for large data sets using agg and sharding -> you can use hadoop and map/reduce as alternative
+
+// states with the largest populations over 10 million ...
+db.zips.aggregate([ 
+   { $group: { _id: "$state", totalPop: { $sum: "$pop" }}},
+   { $match: { totalPop: { $gte: 10*1000*1000 }}} 
+])
+
+# homework 5.1
+// test first on inventory collection
+use agg
+db.inventory.aggregate([
+    {$unwind: "$sizes"},
+    {$group: 
+      {
+        _id: "$sizes", 
+         count: {$sum: 1} 
+      }
+     },
+     {$sort: {count: -1}}
+])
+
+// unwound blog post looks like this:
+{
+    "_id": 0,
+    "body": "blah",
+    "permalink": "btxcacmbqkxbpgtpeero",
+    "author": "machine",
+    "title": "Declaration of Independence",
+    "tags": [
+        "study",
+        "department",
+        "buffet"
+    ],
+    "comments": {
+        "body": "not much to say",
+        "email": "VbXuwLHl@iokAfATQ.com",
+        "author": "Merissa Mann"
+    },
+    "date": "2013-03-16T02:50:27.878Z"
+}
+
+
+
+use blog
+db.posts.aggregate([
+    {$unwind: "$comments"},
+    {$group: 
+      {
+        _id: "$comments.author", 
+         count: {$sum: 1} 
+      }
+     },
+     {$project:
+        {
+		count: 1
+        }
+     },
+     {$sort: {count: -1}},
+	 {$limit: 1}
+])
+
+// result is Gisela Levin with 112 comments
+
+// Homework 5.2
+// mongoimport --db test --collection  zips --drop --file small_zips.json
+db.zips.aggregate([
+    {$match:
+     {
+      $or: [ {state:"CA"},
+	         {state:"NY"}
+			]
+     }
+    },
+    {$group:
+       {
+         _id: {state: "$state", city: "$city"},
+         tot_city_pop: {$sum: "$pop"}
+       }
+    },
+     {$match:
+       {
+        tot_city_pop: { $gt: 25000 }
+       }
+      },
+    {$group:
+       {
+         _id: null,
+         avg_pop: {$avg: "$tot_city_pop"}
+       }
+    }
+])
+// answer is 44805
+
+
+//Homework 5.3
+use homework53
+db.grades.aggregate([
+    {$unwind: "$scores"},
+    {$match:
+     {
+      $or: [ {"scores.type":"exam"},
+             {"scores.type":"homework"}
+           ]
+      }
+    },
+    {$group:
+       {
+         _id: {class_id: "$class_id", student_id: "$student_id"},
+         student_avg: {$avg: "$scores.score"}
+       }
+    },
+    {$group:
+       {
+         _id: {class_id: "$_id.class_id"},
+         class_avg: {$avg: "$student_avg"}
+       }
+    },
+	{$sort: {class_avg: -1}}
+])
+
+// results for homework 5.3
+{ "_id" : { "class_id" : 1 }, "class_avg" : 64.50642324269175 }
+{ "_id" : { "class_id" : 5 }, "class_avg" : 58.084487676135495 }
+{ "_id" : { "class_id" : 20 }, "class_avg" : 57.6309834548989 }
+{ "_id" : { "class_id" : 26 }, "class_avg" : 56.06918278769094 }
+{ "_id" : { "class_id" : 9 }, "class_avg" : 55.56861693456624 }
+{ "_id" : { "class_id" : 14 }, "class_avg" : 55.36017373346245 }
+{ "_id" : { "class_id" : 24 }, "class_avg" : 53.6103459780166 }
+{ "_id" : { "class_id" : 16 }, "class_avg" : 53.458335393624246 }
+{ "_id" : { "class_id" : 13 }, "class_avg" : 52.738286239952366 }
+{ "_id" : { "class_id" : 4 }, "class_avg" : 52.65541561065859 }
+{ "_id" : { "class_id" : 17 }, "class_avg" : 52.42469177746091 }
+{ "_id" : { "class_id" : 23 }, "class_avg" : 51.93284830763039 }
+{ "_id" : { "class_id" : 3 }, "class_avg" : 51.7742498662982 }
+{ "_id" : { "class_id" : 0 }, "class_avg" : 50.64317695848949 }
+{ "_id" : { "class_id" : 19 }, "class_avg" : 50.59071928635092 }
+{ "_id" : { "class_id" : 27 }, "class_avg" : 50.58111308566053 }
+{ "_id" : { "class_id" : 11 }, "class_avg" : 49.952812365344215 }
+{ "_id" : { "class_id" : 29 }, "class_avg" : 49.30544060269724 }
+{ "_id" : { "class_id" : 7 }, "class_avg" : 48.87708798013475 }
+{ "_id" : { "class_id" : 6 }, "class_avg" : 48.41485242956823 }
+{ "_id" : { "class_id" : 10 }, "class_avg" : 47.663462173280614 }
+{ "_id" : { "class_id" : 15 }, "class_avg" : 47.22009466630579 }
+{ "_id" : { "class_id" : 21 }, "class_avg" : 45.41539323359457 }
+{ "_id" : { "class_id" : 25 }, "class_avg" : 43.998820032401284 }
+{ "_id" : { "class_id" : 22 }, "class_avg" : 43.47760542089679 }
+{ "_id" : { "class_id" : 18 }, "class_avg" : 43.40692681712815 }
+{ "_id" : { "class_id" : 30 }, "class_avg" : 42.71200726236121 }
+{ "_id" : { "class_id" : 28 }, "class_avg" : 41.59824801397288 }
+{ "_id" : { "class_id" : 8 }, "class_avg" : 41.30388381000019 }
+{ "_id" : { "class_id" : 12 }, "class_avg" : 40.62345969481145 }
+{ "_id" : { "class_id" : 2 }, "class_avg" : 37.61742117387635 }
+
+
+// homework 5.4
+use homework54
+db.zips.aggregate([
+    {$project: 
+     {
+     city: 1,
+     pop: 1,
+     first_char: {$substr : ["$city",0,1]},
+     }	 
+   },
+   {$match: {first_char: {$regex:'[0-9]'}}},
+   {$group:
+      {
+        _id: "$_id",
+        tot_pop: {$sum: "$pop"}
+      }
+   },
+   {$group:
+      {
+        _id: null,
+        grand_tot_pop: {$sum: "$tot_pop"}
+      }
+   }
+])
+
+// yields the correct answer for total rural population
+{ "_id" : null, "grand_tot_pop" : 298015 }
+
+// or using only 1 group phase
+db.zips.aggregate([
+    {$project: 
+     {
+     city: 1,
+     pop: 1,
+     first_char: {$substr : ["$city",0,1]},
+     }	 
+   },
+   {$match: {first_char: {$regex:'[0-9]'}}},     // first char is a digit
+   {$group:
+      {
+        _id: null,
+        tot_pop: {$sum: "$pop"}
+      }
+   }
+])
+
+// yeilds same result
+{ "_id" : null, "tot_pop" : 298015 }
+
+// following does not work.  don't know why.
+db.zips.aggregate([
+   {$match: { _id : { $eq: "$city"}}},
+   {$group:
+      {
+        _id: null,
+        tot_pop: {$sum: "$pop"}
+      }
+   }
+])

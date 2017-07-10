@@ -1,0 +1,64 @@
+use test;
+db.stuff.insert( {a:1, b:1, c:1});
+db.stuff.insert( {a:0, b:11, c:21});
+db.stuff.insert( {a:2, b:21, c:22});
+db.stuff.insert( {a:100000, b:1, c:1});
+db.stuff.insert( {a:100000, b:100000, c:1000000});
+
+db.stuff.getIndexes()
+
+
+
+db.stuff.createIndex({a: 1, b: 1})
+db.stuff.find(     {a: {$lt: 10000}, b:{$gt: 5}},      {a: 1, c: 1}    ).sort({c: -1}   ).explain()
+	"stage" : "IXSCAN",
+							"keyPattern" : {
+								"a" : 1,
+								"b" : 1
+							},
+							"indexName" : "a_1_b_1",
+							
+db.stuff.dropIndex({a: 1, b: 1})
+
+
+
+
+db.stuff.createIndex({a: 1, c: 1})
+db.stuff.find(     {a: {$lt: 10000}, b:{$gt: 5}},      {a: 1, c: 1}    ).sort({c: -1}   ).explain()
+	"stage" : "IXSCAN",
+							"keyPattern" : {
+								"a" : 1,
+								"c" : 1
+							},
+							"indexName" : "a_1_c_1",
+db.stuff.dropIndex({a: 1, c: 1})
+
+
+
+db.stuff.createIndex({a: 1, b: 1, c: -1})
+db.stuff.find(     {a: {$lt: 10000}, b:{$gt: 5}},      {a: 1, c: 1}    ).sort({c: -1}   ).explain()
+	"stage" : "IXSCAN",
+							"keyPattern" : {
+								"a" : 1,
+								"b" : 1,
+								"c" : -1
+							},
+							"indexName" : "a_1_b_1_c_-1",
+db.stuff.dropIndex({a: 1, b: 1, c: -1})
+
+
+
+db.stuff.createIndex({c: 1})
+db.stuff.find(     {a: {$lt: 10000}, b:{$gt: 5}},      {a: 1, c: 1}    ).sort({c: -1}   ).explain()
+"stage" : "IXSCAN",
+					"keyPattern" : {
+						"c" : 1
+					},
+					"indexName" : "c_1",
+db.stuff.dropIndex({c: 1})
+
+
+CONCLUSION:
+   each index is used in the query if it has been created.
+ANSWER is all 4 indexes used if available except _id_
+  

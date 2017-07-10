@@ -1,0 +1,73 @@
+// Mongo DB class week 6 cheatsheet.  Engineering applications
+
+Intro:
+1. Durability of Writes - Write Concern and network errors
+2. Replication - how to gain fault tolerance and availability
+3. Sharding - how to gain greater throughput
+
+
+Write Concern
+W value (W=1) - write to DB
+J value  (J=false) - Journal written to disk
+
+w=1 wait for primary
+w=2 wait for primary and another secondary
+w=3 wait for primary and 2 other secondaries to confirm write
+w='majority' wait for a majority of the nodes
+
+wtimeout = how long you wait for the write
+
+w, j and wtimeout can be set on a connection or collection or replicaset
+
+Election of primary node in replication requires a minumum of 3 nodes
+
+replica set elections:
+1. regular node (primary or secondary)
+2. arbiter node (used for voting - has no data)
+3. delayed/regular - disaster recovery node (can participate in voting, but can't be primary)
+4. hidden (can't be primary, but participate in voting)
+
+each node has 1 vote
+
+Write Consistency:
+1. only a single primary at any given time
+2. writes only go to primary
+3. reads can go to primary (for consistency) or can go to secondaries (but can read stale data)
+4. Eventual consistency (cassandra) is a weaker form of consistency as compared to mongo
+
+Writes cannot complete during failover to another node (~3 secs)
+rs.slaveOk()   // allows read from secondary
+rs.status()    // to get replica set status
+
+read preference
+===============
+primary
+primary preferred
+secondary
+secondary preferred
+nearest
+
+eventually consistent read if reading from secondary
+
+sharding - horizontal scalability - spread a collection out to muliple server shards using a shard key
+shards are each replica sets
+mongos router will take care of distribution
+
+sharding
+========
+range based
+hash based
+
+implications of sharding
+========================
+every doc needs a shard key
+shard key is immutable
+index that starts with a shard key
+no shard key implies a scatter/gather operation 
+no unique key unless it is part of a shard key (you can't enforce uniqueness unless you supply shard key)
+
+shard key:
+---------
+sufficient cardinality
+avoid hot-spotting (a key that is monotonically increasing)
+

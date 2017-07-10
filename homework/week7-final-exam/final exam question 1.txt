@@ -1,0 +1,52 @@
+db.messages.find( {"headers.From": "andrew.fastow@enron.com"}).count()
+
+db.messages.find( {"headers.From": "andrew.fastow@enron.com"}).find({"headers.To": "jeff.skilling@enron.com"})
+
+db.messages.aggregate([
+    {$match:
+     {"headers.From": "andrew.fastow@enron.com"}
+    },
+    {$match:
+     {"headers.To": "jeff.skilling@enron.com"}
+    },
+    {$project:
+     {
+      _id: 1
+      }
+     }
+])
+
+db.messages.find(
+   {  headers: { $elemMatch: { "From": "andrew.fastow@enron.com", 
+                    "To":   "jeff.skilling@enron.com" } 
+				}
+    }
+)
+
+
+db.messages.find(
+   {
+     headers:
+       {
+          $elemMatch:
+            {
+               From: "andrew.fastow@enron.com", 
+               To: "jeff.skilling@enron.com"
+            }
+       }
+    }
+)
+
+
+
+db.messages.find(
+   {
+     headers:
+       {
+          $elemMatch:
+            {
+               From: "andrew.fastow@enron.com"
+            }
+       }
+    }
+)
